@@ -208,3 +208,9 @@ __marimo__/
 
 CLAUDE.md
 ./claude
+
+# Yelp dataset (large files, never commit)
+downloaded_data/
+Yelp-JSON.zip
+data/raw/
+data/processed/
