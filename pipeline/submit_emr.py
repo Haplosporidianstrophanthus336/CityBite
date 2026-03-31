@@ -52,10 +52,12 @@ JOB_CONFIGS: dict[str, dict] = {
     "aggregate": {
         "name": "CityBite-Aggregate",
         "script": f"{SCRIPT_BASE}/aggregate_job.py",
+        "packages": "org.postgresql:postgresql:42.6.0",
         "args": [
             "--input", f"s3://{S3_BUCKET}/processed/reviews_enriched/",
             "--output", f"s3://{S3_BUCKET}/processed/",
             "--mode", "emr",
+            "--skip-jdbc",
         ],
     },
 }
@@ -85,12 +87,16 @@ def upload_scripts(jobs: list[str]) -> None:
 
 def _build_step(job: str) -> dict:
     config = JOB_CONFIGS[job]
+    spark_args = ["spark-submit", "--deploy-mode", "client"]
+    if "packages" in config:
+        spark_args += ["--packages", config["packages"]]
+    spark_args += [config["script"]] + config["args"]
     return {
         "Name": config["name"],
         "ActionOnFailure": "TERMINATE_CLUSTER",  # fail fast on transient clusters
         "HadoopJarStep": {
             "Jar": "command-runner.jar",
-            "Args": ["spark-submit", "--deploy-mode", "cluster", config["script"]] + config["args"],
+            "Args": spark_args,
         },
     }
 

@@ -25,12 +25,15 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from dotenv import load_dotenv
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.types import DoubleType
 
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # not available on EMR — paths come from CLI args
 
 REQUIRED_REVIEW_COLS = ["review_id", "business_id", "user_id", "stars", "date", "text"]
 REQUIRED_BUSINESS_COLS = ["business_id", "is_open", "name", "city", "state", "latitude", "longitude", "categories"]
