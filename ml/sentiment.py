@@ -1,10 +1,14 @@
 """
-Compute grid-level sentiment scores and write to local SQLite or RDS.
+Train a scikit-learn sentiment classifier on review text, evaluate F1, then
+compute and persist grid-level sentiment scores.
 
-This local-friendly implementation derives sentiment labels from star ratings:
-- positive: stars >= 4
-- negative: stars <= 2
-- neutral:  stars == 3 (excluded from score denominator)
+Steps (local mode):
+  1. Load review text + stars from processed Parquet (pandas)
+  2. Label: positive (stars >= 4), negative (stars <= 2), drop neutral (3)
+  3. Train TF-IDF (10K terms, unigrams+bigrams) + LogisticRegression classifier
+  4. Evaluate: accuracy, weighted F1, confusion matrix on 20% held-out test set
+  5. Compute per-grid-cell sentiment score (% positive reviews)
+  6. Write grid_sentiment table to SQLite (local) or RDS PostgreSQL (emr)
 
 Usage (local):
     spark-submit ml/sentiment.py --input data/processed/ --mode local
@@ -44,9 +48,78 @@ def load_reviews_spark(spark: SparkSession, input_path: str) -> DataFrame:
 
 
 def load_reviews_pandas(input_path: str) -> pd.DataFrame:
+    """Load grid_cell + stars for grid-level sentiment aggregation."""
     path = input_path.rstrip("/") + "/reviews_enriched"
     df = pd.read_parquet(path, columns=["grid_cell", "stars"])
     return df
+
+
+def load_reviews_for_classifier(input_path: str) -> pd.DataFrame:
+    """Load text + stars for sklearn classifier training (local mode only)."""
+    path = input_path.rstrip("/") + "/reviews_enriched"
+    return pd.read_parquet(path, columns=["text", "stars"])
+
+
+# ---------------------------------------------------------------------------
+# Scikit-learn sentiment classifier (local mode)
+# ---------------------------------------------------------------------------
+
+def train_and_evaluate_classifier(reviews: pd.DataFrame) -> tuple[float, float]:
+    """
+    Train a TF-IDF + LogisticRegression classifier on review text.
+
+    Labels are derived from star ratings (same convention as the grid scorer):
+        positive → stars >= 4
+        negative → stars <= 2
+        neutral  → stars == 3 (dropped — ambiguous signal)
+
+    Limits training corpus to 200K rows for speed on local hardware.
+
+    Returns:
+        (accuracy, weighted_f1) — both in [0, 1]
+    """
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.metrics import accuracy_score, confusion_matrix, f1_score
+    from sklearn.model_selection import train_test_split
+    from sklearn.pipeline import Pipeline
+
+    # Drop neutral reviews; assign binary label
+    labeled = reviews[reviews["stars"] != 3].copy()
+    labeled["label"] = (labeled["stars"] >= 4).astype(int)
+
+    # Cap at 200K for local dev speed
+    if len(labeled) > 200_000:
+        labeled = labeled.sample(200_000, random_state=42)
+
+    X = labeled["text"].fillna("").values
+    y = labeled["label"].values
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
+
+    clf_pipeline = Pipeline([
+        ("tfidf", TfidfVectorizer(max_features=10_000, ngram_range=(1, 2))),
+        ("clf",   LogisticRegression(max_iter=1000)),
+    ])
+
+    print(f"  Training on {len(X_train):,} reviews, testing on {len(X_test):,} ...")
+    clf_pipeline.fit(X_train, y_train)
+    y_pred = clf_pipeline.predict(X_test)
+
+    acc = accuracy_score(y_test, y_pred)
+    f1  = f1_score(y_test, y_pred, average="weighted")
+    cm  = confusion_matrix(y_test, y_pred)
+
+    print(f"  Accuracy : {acc:.4f}")
+    print(f"  F1 score : {f1:.4f}  (target >= 0.80)")
+    print(f"  Confusion matrix (rows=actual, cols=predicted):\n{cm}")
+
+    if f1 < 0.80:
+        print("  WARNING: F1 < 0.80 — consider adding more training data or tuning TF-IDF params")
+
+    return acc, f1
 
 
 def compute_grid_sentiment_spark(reviews: DataFrame) -> DataFrame:
@@ -161,7 +234,16 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.mode == "local":
-        print("Loading reviews (pandas local mode) ...")
+        # ── Step 1: Train + evaluate sklearn classifier ────────────────────
+        print("Loading reviews for sklearn classifier ...")
+        clf_reviews = load_reviews_for_classifier(args.input)
+        print(f"  Total reviews loaded: {len(clf_reviews):,}")
+
+        print("Training TF-IDF + LogisticRegression sentiment classifier ...")
+        acc, f1 = train_and_evaluate_classifier(clf_reviews)
+
+        # ── Step 2: Compute grid-level sentiment scores ────────────────────
+        print("Loading reviews for grid sentiment aggregation ...")
         reviews_pd = load_reviews_pandas(args.input)
 
         print("Computing grid sentiment ...")
